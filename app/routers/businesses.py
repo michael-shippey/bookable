@@ -6,22 +6,10 @@ from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.models.business import Business
 from app.models.user import User, UserRole
+from app.permissions import ensure_can_manage, get_business_or_404
 from app.schemas.business import BusinessCreate, BusinessRead, BusinessUpdate
 
 router = APIRouter(prefix="/businesses", tags=["businesses"])
-
-
-def _get_business_or_404(db: Session, business_id: int) -> Business:
-    business = db.get(Business, business_id)
-    if business is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Business not found")
-    return business
-
-
-def _ensure_can_manage(business: Business, user: User) -> None:
-    """Ownership check: the role says what you may do, this says to WHAT."""
-    if user.role != UserRole.ADMIN and business.owner_id != user.id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not own this business")
 
 
 @router.post("", response_model=BusinessRead, status_code=status.HTTP_201_CREATED)
@@ -56,7 +44,7 @@ def list_businesses(
 
 @router.get("/{business_id}", response_model=BusinessRead)
 def get_business(business_id: int, db: Session = Depends(get_db)):
-    return _get_business_or_404(db, business_id)
+    return get_business_or_404(db, business_id)
 
 
 @router.patch("/{business_id}", response_model=BusinessRead)
@@ -68,8 +56,8 @@ def update_business(
         require_role(UserRole.BUSINESS_OWNER, UserRole.ADMIN)
     ),
 ):
-    business = _get_business_or_404(db, business_id)
-    _ensure_can_manage(business, current_user)
+    business = get_business_or_404(db, business_id)
+    ensure_can_manage(business, current_user)
 
     # exclude_unset: only touch fields the client actually sent.
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -88,7 +76,7 @@ def delete_business(
         require_role(UserRole.BUSINESS_OWNER, UserRole.ADMIN)
     ),
 ):
-    business = _get_business_or_404(db, business_id)
-    _ensure_can_manage(business, current_user)
+    business = get_business_or_404(db, business_id)
+    ensure_can_manage(business, current_user)
     db.delete(business)
     db.commit()
