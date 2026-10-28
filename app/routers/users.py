@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRead
 from app.security import hash_password
@@ -35,3 +36,9 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
 
     db.refresh(user)  # reload to pick up database-generated values (id, created_at)
     return user
+
+
+@router.get("/me", response_model=UserRead)
+def read_current_user(current_user: User = Depends(get_current_user)):
+    """Protected: returns whoever the token belongs to."""
+    return current_user

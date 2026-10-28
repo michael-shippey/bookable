@@ -21,6 +21,8 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg://bookable:bookable@db:5432/bookable
+      # Development-only key. Real deployments must set their own secret.
+      SECRET_KEY: dev-only-secret-key-change-me-in-production-0123456789
     volumes:
       - .:/code   # live-reload: edit files locally, container picks them up
     depends_on:
