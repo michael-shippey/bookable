@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bookable
+      POSTGRES_PASSWORD: bookable
+      POSTGRES_DB: bookable
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookable"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://bookable:bookable@db:5432/bookable
+    volumes:
+      - .:/code   # live-reload: edit files locally, container picks them up
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
