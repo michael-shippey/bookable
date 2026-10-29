@@ -1,4 +1,5 @@
 # Bookable
+[![CI](https://github.com/michael-shippey/bookable/actions/workflows/ci.yml/badge.svg)](https://github.com/michael-shippey/bookable/actions/workflows/ci.yml)
 
 A booking/reservation REST API built with FastAPI and PostgreSQL.
 
