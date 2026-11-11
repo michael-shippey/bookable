@@ -1,0 +1,16 @@
+# Render Blueprint: describes the deployed web service as code.
+# The database lives on Neon (see README), so only the web service is here.
+services:
+  - type: web
+    name: bookable
+    runtime: docker          # builds from the repo's Dockerfile
+    plan: free
+    region: ohio           # keep this close to the Neon region
+    healthCheckPath: /health
+    # Apply any new migrations, then start the server (no --reload in production).
+    dockerCommand: 'sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"'
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # you paste this in the Render dashboard; it is never committed
+      - key: SECRET_KEY
+        generateValue: true  # Render generates a long random secret for you
