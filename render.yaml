@@ -3,12 +3,10 @@
 services:
   - type: web
     name: bookable
-    runtime: docker          # builds from the repo's Dockerfile
+    runtime: docker          # builds from the repo's Dockerfile; its CMD runs start.sh
     plan: free
-    region: ohio           # keep this close to the Neon region
+    region: ohio             # keep this close to the Neon region
     healthCheckPath: /health
-    # Apply any new migrations, then start the server (no --reload in production).
-    dockerCommand: 'sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"'
     envVars:
       - key: DATABASE_URL
         sync: false          # you paste this in the Render dashboard; it is never committed

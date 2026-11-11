@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +19,16 @@ class Settings(BaseSettings):
     cancellation_notice_hours: int = 24
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("database_url")
+    @classmethod
+    def use_the_psycopg_driver(cls, value: str) -> str:
+        """Hosting providers hand out plain 'postgres://' or 'postgresql://' URLs.
+        SQLAlchemy needs to be told which driver to use, so add it."""
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value[len(prefix):]
+        return value
 
 
 settings = Settings()

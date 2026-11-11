@@ -17,6 +17,8 @@ services:
 
   api:
     build: .
+    # Development: auto-reload on file changes (production uses the Dockerfile's start.sh)
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     environment:
