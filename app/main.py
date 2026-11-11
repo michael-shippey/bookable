@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.routers import auth, availability, businesses, services, slots, users
+from app.routers import auth, availability, bookings, businesses, services, slots, users
 
 app = FastAPI(title=settings.app_name)
 app.include_router(auth.router)
@@ -13,6 +13,7 @@ app.include_router(businesses.router)
 app.include_router(services.router)
 app.include_router(availability.router)
 app.include_router(slots.router)
+app.include_router(bookings.router)
 
 
 @app.get("/health")

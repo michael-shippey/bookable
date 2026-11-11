@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    # Customers must cancel at least this long before the start. Business
+    # owners and admins can cancel at any time before it starts.
+    cancellation_notice_hours: int = 24
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

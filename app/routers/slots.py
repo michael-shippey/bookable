@@ -1,10 +1,11 @@
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.bookings import confirmed_busy_intervals
 from app.database import get_db
 from app.models.availability import AvailabilityRule
 from app.models.service import Service
@@ -29,22 +30,20 @@ def get_availability(
 ):
     """Public. Open slots for a service on one day, as seen by the customer.
 
-    Advisory only: another customer may take a slot before you book it. The
-    booking step is what actually guarantees there are no double bookings.
+    Slots already booked are left out. Still advisory: another customer may
+    take a slot before you book it, and the booking step is what guarantees
+    there are no double bookings.
     """
     # Cheap input checks first, before touching the database.
     try:
         customer_tz = ZoneInfo(validate_timezone(customer_timezone))
     except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error))
+        raise HTTPException(422, str(error))
 
     # Customers can be up to a day ahead of or behind UTC, hence the extra day.
     today = datetime.now(UTC).date()
     if on_date < today - timedelta(days=1) or on_date > today + timedelta(days=366):
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "date must be within the next year",
-        )
+        raise HTTPException(422, "date must be within the next year")
 
     service = db.get(Service, service_id)
     if service is None or not service.is_active:
@@ -56,6 +55,11 @@ def get_availability(
         select(AvailabilityRule).where(AvailabilityRule.business_id == business.id)
     ).all()
 
+    # Any booking that could touch the customer's day lies within a few days of it.
+    busy = confirmed_busy_intervals(
+        db, business.id, datetime.combine(on_date, time(12), tzinfo=UTC), days=3
+    )
+
     slots = generate_slots(
         rules=rules,
         business_tz=business_tz,
@@ -63,6 +67,7 @@ def get_availability(
         customer_date=on_date,
         duration_minutes=service.duration_minutes,
         now=datetime.now(UTC),
+        busy=busy,
     )
 
     return AvailabilityResponse(

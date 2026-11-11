@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -79,4 +80,13 @@ def delete_business(
     business = get_business_or_404(db, business_id)
     ensure_can_manage(business, current_user)
     db.delete(business)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Bookings protect their business and services from being deleted, so
+        # booking history is never erased.
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This business has bookings and cannot be deleted",
+        )

@@ -20,6 +20,9 @@ class Service(Base):
     # bad data ever reaches it by a route other than our API.
     __table_args__ = (
         UniqueConstraint("business_id", "name", name="uq_services_business_name"),
+        # Redundant as a uniqueness rule (id is already unique), but it gives
+        # bookings something to point at: the pair (service, business).
+        UniqueConstraint("id", "business_id", name="uq_services_id_business_id"),
         CheckConstraint(
             "duration_minutes > 0 AND duration_minutes <= 1440",
             name="ck_services_duration_range",
@@ -39,8 +42,8 @@ class Service(Base):
     # values like 0.10 exactly, which causes rounding bugs with money.
     price_cents: Mapped[int]
 
-    # "Soft delete": we deactivate instead of deleting, because bookings will
-    # later point at services and we don't want to erase booking history.
+    # "Soft delete": we deactivate instead of deleting, because bookings
+    # point at services and we don't want to erase booking history.
     is_active: Mapped[bool] = mapped_column(default=True)
 
     created_at: Mapped[datetime] = mapped_column(
