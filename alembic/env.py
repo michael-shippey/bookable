@@ -9,11 +9,13 @@ import app.models  # noqa: F401  (importing registers every model on Base.metada
 
 config = context.config
 
-# Use the same database URL as the app itself.
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+# Use the app's database URL, unless the caller already chose one. (The test
+# suite points Alembic at a separate test database this way.)
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Alembic compares this metadata to the real database to autogenerate migrations.
 target_metadata = Base.metadata

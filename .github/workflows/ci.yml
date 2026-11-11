@@ -10,6 +10,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # A real Postgres for the database tests, thrown away after each run.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bookable
+          POSTGRES_PASSWORD: bookable
+          POSTGRES_DB: bookable
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bookable"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v4
@@ -26,6 +42,7 @@ jobs:
       - name: Run tests
         run: pytest
         env:
-          # CI-only value. The app refuses to start without a secret key,
-          # but this one is never used anywhere real.
+          # CI-only values, never used anywhere real.
           SECRET_KEY: ci-only-secret-key-not-used-anywhere-else-0123456789
+          # The tests create and use a separate "bookable_test" database.
+          DATABASE_URL: postgresql+psycopg://bookable:bookable@localhost:5432/bookable
