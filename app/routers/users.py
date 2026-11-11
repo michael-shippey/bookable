@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.security import hash_password
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -24,6 +24,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
         email=email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
+        timezone=payload.timezone,
     )
     db.add(user)
     try:
@@ -41,4 +42,18 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserRead)
 def read_current_user(current_user: User = Depends(get_current_user)):
     """Protected: returns whoever the token belongs to."""
+    return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+def update_current_user(
+    payload: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Change your own name or timezone."""
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
     return current_user

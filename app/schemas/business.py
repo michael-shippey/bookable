@@ -1,15 +1,8 @@
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-def _check_timezone(value: str) -> str:
-    try:
-        ZoneInfo(value)
-    except (KeyError, ValueError, OSError):
-        raise ValueError("Unknown timezone (use a name like 'America/Boise' or 'UTC')")
-    return value
+from app.schemas.common import validate_timezone
 
 
 class BusinessCreate(BaseModel):
@@ -19,8 +12,8 @@ class BusinessCreate(BaseModel):
 
     @field_validator("timezone")
     @classmethod
-    def validate_timezone(cls, value: str) -> str:
-        return _check_timezone(value)
+    def check_timezone(cls, value: str) -> str:
+        return validate_timezone(value)
 
 
 class BusinessUpdate(BaseModel):
@@ -30,18 +23,20 @@ class BusinessUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     timezone: str | None = None
 
-    @field_validator("name", "timezone")
+    @field_validator("name")
     @classmethod
-    def not_null(cls, value, info):
-        # These columns are required in the database, so an explicit null is invalid.
+    def name_not_null(cls, value):
+        # This column is required in the database, so an explicit null is invalid.
         if value is None:
-            raise ValueError(f"{info.field_name} cannot be null")
+            raise ValueError("name cannot be null")
         return value
 
     @field_validator("timezone")
     @classmethod
-    def validate_timezone(cls, value: str) -> str:
-        return _check_timezone(value)
+    def check_timezone(cls, value):
+        if value is None:
+            raise ValueError("timezone cannot be null")
+        return validate_timezone(value)
 
 
 class BusinessRead(BaseModel):

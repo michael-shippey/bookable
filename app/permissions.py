@@ -7,8 +7,11 @@ from app.models.business import Business
 from app.models.user import User, UserRole
 
 
-def get_business_or_404(db: Session, business_id: int) -> Business:
-    business = db.get(Business, business_id)
+def get_business_or_404(db: Session, business_id: int, lock: bool = False) -> Business:
+    """Fetch a business. With lock=True the row is locked (SELECT ... FOR UPDATE)
+    until the transaction ends, so concurrent requests touching the same
+    business take turns instead of racing each other."""
+    business = db.get(Business, business_id, with_for_update=True if lock else None)
     if business is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Business not found")
     return business

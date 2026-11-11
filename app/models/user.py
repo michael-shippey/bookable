@@ -24,6 +24,14 @@ class User(Base):
         Enum(UserRole, name="user_role"), default=UserRole.CUSTOMER
     )
     is_active: Mapped[bool] = mapped_column(default=True)
+
+    # The customer's own IANA timezone, used to show them times locally.
+    # server_default matters here: this column is being added to a table that
+    # already has rows, and Postgres needs a value to fill into those rows.
+    timezone: Mapped[str] = mapped_column(
+        String(64), default="UTC", server_default="UTC"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
